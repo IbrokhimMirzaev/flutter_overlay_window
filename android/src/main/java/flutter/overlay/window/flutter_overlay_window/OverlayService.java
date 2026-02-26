@@ -387,10 +387,8 @@ public class OverlayService extends Service implements View.OnTouchListener {
                     // Pre-compute Y bounds once per drag session
                     int[] loc = new int[2];
                     flutterView.getLocationOnScreen(loc);
-                    DisplayMetrics dm = new DisplayMetrics();
-                    windowManager.getDefaultDisplay().getRealMetrics(dm);
                     mMinParamsY = params.y + (statusBarHeightPx() - loc[1]);
-                    mMaxParamsY = params.y + (dm.heightPixels - flutterView.getHeight() + navigationBarHeightPx());
+                    mMaxParamsY = params.y + (szWindow.y - navigationBarHeightPx() - loc[1]);
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float dx = event.getRawX() - lastX;
