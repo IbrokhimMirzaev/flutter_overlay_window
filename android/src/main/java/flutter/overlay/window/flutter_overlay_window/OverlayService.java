@@ -67,6 +67,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
     private float lastX, lastY;
     private int lastYPosition;
     private boolean dragging;
+    private int mMinParamsY, mMaxParamsY;
     private static final float MAXIMUM_OPACITY_ALLOWED_FOR_S_AND_HIGHER = 0.8f;
     private Point szWindow = new Point();
     private Timer mTrayAnimationTimer;
@@ -383,6 +384,13 @@ public class OverlayService extends Service implements View.OnTouchListener {
                     dragging = false;
                     lastX = event.getRawX();
                     lastY = event.getRawY();
+                    // Pre-compute Y bounds once per drag session
+                    int[] loc = new int[2];
+                    flutterView.getLocationOnScreen(loc);
+                    DisplayMetrics dm = new DisplayMetrics();
+                    windowManager.getDefaultDisplay().getRealMetrics(dm);
+                    mMinParamsY = params.y + (statusBarHeightPx() - loc[1]);
+                    mMaxParamsY = params.y + (dm.heightPixels - flutterView.getHeight() + navigationBarHeightPx());
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float dx = event.getRawX() - lastX;
@@ -400,8 +408,10 @@ public class OverlayService extends Service implements View.OnTouchListener {
                             || WindowSetup.gravity == (Gravity.BOTTOM | Gravity.RIGHT);
                     int xx = params.x + ((int) dx * (invertX ? -1 : 1));
                     int yy = params.y + ((int) dy * (invertY ? -1 : 1));
+                    yy = Math.max(mMinParamsY, Math.min(mMaxParamsY, yy));
                     params.x = xx;
                     params.y = yy;
+
                     if (windowManager != null) {
                         windowManager.updateViewLayout(flutterView, params);
                     }
