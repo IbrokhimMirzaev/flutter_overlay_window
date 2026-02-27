@@ -148,15 +148,11 @@ public class OverlayService extends Service implements View.OnTouchListener {
         });
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            windowManager.getDefaultDisplay().getSize(szWindow);
-        } else {
-            DisplayMetrics displaymetrics = new DisplayMetrics();
-            windowManager.getDefaultDisplay().getMetrics(displaymetrics);
-            int w = displaymetrics.widthPixels;
-            int h = displaymetrics.heightPixels;
-            szWindow.set(w, h);
-        }
+        // Use getRealMetrics for consistent screen size across all Android versions.
+        // On Android 15+, getSize() returns the same as getRealSize(), breaking old calculations.
+        DisplayMetrics dm = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getRealMetrics(dm);
+        szWindow.set(dm.widthPixels, dm.heightPixels);
         int dx = startX == OverlayConstants.DEFAULT_XY ? 0 : startX;
         int dy = startY == OverlayConstants.DEFAULT_XY ? -statusBarHeightPx() : startY;
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -387,8 +383,11 @@ public class OverlayService extends Service implements View.OnTouchListener {
                     // Pre-compute Y bounds once per drag session
                     int[] loc = new int[2];
                     flutterView.getLocationOnScreen(loc);
+                    int viewHeight = flutterView.getHeight();
+                    // Top: view top must not go above status bar
                     mMinParamsY = params.y + (statusBarHeightPx() - loc[1]);
-                    mMaxParamsY = params.y + (szWindow.y - navigationBarHeightPx() - loc[1]);
+                    // Bottom: view bottom must not go below nav bar
+                    mMaxParamsY = params.y + (szWindow.y - navigationBarHeightPx() - viewHeight - loc[1]);
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float dx = event.getRawX() - lastX;
